@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>유니크튠즈 폐업기념 온라인음악전시</title>
-<meta name="description" content="유니크튠즈레코드 12년, 폐업기념 온라인음악전시. 무료 관람.">
+<title>유니크튠즈 폐업기념 온라인 음악전시</title>
+<meta name="description" content="유니크튠즈레코드 12년, 폐업기념 온라인 음악전시. 무료 관람.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="유니크튠즈 폐업기념 온라인음악전시">
+<meta property="og:title" content="유니크튠즈 폐업기념 온라인 음악전시">
 <meta property="og:description" content="유니크튠즈레코드 12년, 무료 관람">
 <meta property="og:url" content="https://uniquetuneskim-ops.github.io/uniquetunes-exhibition/">
 <meta property="og:image" content="https://uniquetuneskim-ops.github.io/uniquetunes-exhibition/media/og.jpg">
@@ -41,14 +41,14 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
   background:radial-gradient(ellipse at 50% 0%,rgba(243,194,107,.18),transparent 60%),var(--bg)}
 .gate-inner{text-align:center;max-width:520px;width:100%;-webkit-user-select:text;user-select:text}
 .gate-logo{width:min(320px,70%);display:block;margin:0 auto 18px;opacity:.95}
-.gate-inner h1{font-family:var(--serif);font-size:clamp(34px,6vw,54px);line-height:1.2;margin:14px 0 8px}
+.gate-inner h1{white-space:pre-line;font-family:var(--serif);font-size:clamp(34px,6vw,54px);line-height:1.2;margin:14px 0 8px}
 .gate-inner .lead{color:var(--dim);margin-bottom:30px}
 .ticket{position:relative;display:flex;text-align:left;background:linear-gradient(135deg,#f6ead4,#e9d6b4);color:#2a1d15;
   border-radius:10px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);margin:0 auto 24px;max-width:480px}
 .ticket .main{flex:1;padding:20px 22px;border-right:2px dashed rgba(42,29,21,.35)}
 .ticket .stub{width:112px;padding:20px 12px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center}
 .t-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;opacity:.6;text-transform:uppercase}
-.t-title{font-family:var(--serif);font-size:21px;font-weight:700;line-height:1.25;margin:4px 0 12px}
+.t-title{white-space:pre-line;font-family:var(--serif);font-size:21px;font-weight:700;line-height:1.25;margin:4px 0 12px}
 .t-row{display:flex;gap:20px;flex-wrap:wrap}
 .t-val{font-family:var(--mono);font-size:14px;font-weight:500}
 .t-price{font-family:var(--serif);font-size:28px;font-weight:700}
@@ -218,7 +218,7 @@ const CONFIG = {
   hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 이쪽으로 따라오실래요?",   // 로비에서 처음 하는 말
 
   label: "UNIQUETUNES",
-  title: "유니크튠즈 폐업기념 온라인음악전시",
+  title: "유니크튠즈 폐업기념\n온라인 음악전시",   // \n 자리에서 줄바꿈
   subtitle: "유니크튠즈레코드 12년, 무료 관람",
 
   rooms: [
@@ -278,7 +278,7 @@ const CONFIG = {
 <canvas id="minimap" class="hidden"></canvas>
 
 <div class="hud-top hidden" id="hudTop">
-  <div class="brand"><img src="media/logo.png" alt="UNIQUETUNES" style="height:14px;vertical-align:-1px;margin-right:8px;opacity:.9">폐업기념 온라인음악전시</div>
+  <div class="brand"><img src="media/logo.png" alt="UNIQUETUNES" style="height:14px;vertical-align:-1px;margin-right:8px;opacity:.9">폐업기념 온라인 음악전시</div>
   <div class="roomname" id="roomName">로비</div>
   <div class="live"><i></i><span id="liveCount">관람 중</span></div>
 </div>
@@ -532,10 +532,10 @@ function drawWorld(t){
   if(LOGO.complete && LOGO.naturalWidth){ const lw=200, lh=lw*LOGO.naturalHeight/LOGO.naturalWidth; cx.globalAlpha=.9; cx.drawImage(LOGO, 495-lw/2, 58-lh/2, lw, lh); cx.globalAlpha=1; }
   // lobby entrance text
   cx.fillStyle="rgba(241,233,223,.9)"; cx.font="700 26px 'Gowun Batang'"; cx.textAlign="center";
-  cx.fillText(C.title, 310, WALL+110);
+  C.title.split("\n").forEach((ln,i)=>cx.fillText(ln, 310, WALL+96+i*34));
   cx.fillStyle="rgba(168,154,140,.9)"; cx.font="400 13px 'IBM Plex Sans KR'";
-  cx.fillText(C.subtitle, 310, WALL+140);
-  cx.fillText("→ 오른쪽 문으로 전시실이 이어집니다", 310, WALL+168);
+  cx.fillText(C.subtitle, 310, WALL+164);
+  cx.fillText("→ 오른쪽 문으로 전시실이 이어집니다", 310, WALL+190);
   // red carpet through doors
   cx.fillStyle="rgba(125,24,36,.28)"; cx.fillRect(40,DOORY-26,WORLD_W-80,52);
 
