@@ -110,6 +110,9 @@ body.open .curtain.r{transform:translateX(102%)}
 .side h2{font-family:var(--serif);font-size:26px;line-height:1.3;margin:6px 0 10px}
 .side .desc{color:var(--dim);font-size:15px;white-space:pre-wrap}
 .side .desc.ph{color:var(--faint);font-style:italic}
+.host{margin-top:18px;padding:14px 16px;border-left:3px solid var(--red2);background:rgba(166,34,51,.08);border-radius:0 8px 8px 0}
+.host-who{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#e07a85;margin-bottom:6px}
+.host-tx{font-family:var(--serif);font-size:15.5px;line-height:1.8;white-space:pre-wrap}
 .watching{font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:14px}
 .cm-head{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--faint);margin:22px 0 10px;border-top:1px solid var(--line);padding-top:18px}
 .cms{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
@@ -166,6 +169,7 @@ body.open .curtain.r{transform:translateX(102%)}
 <!-- =====================================================================
      전시 내용은 CONFIG 하나만 고치면 됩니다.
      전시실(rooms) 안의 works 하나가 벽에 걸리는 영상 한 점입니다.
+     say = 김대표가 액자 옆에서 말풍선으로 하는 짧은 한마디 / note = 영상을 열면 나오는 김대표의 소개글
      youtube 에 유튜브 링크를 넣거나, video / image 에 파일 경로(예: "media/hail.mp4")를 넣으면 재생됩니다.
      ===================================================================== -->
 <script>
@@ -177,26 +181,28 @@ const CONFIG = {
   // 유튜브 링크를 액자 안에서 바로 재생할지 (공개 버전 true)
   embedYouTube: true,
 
+  host: "김대표",   // 도슨트 캐릭터 이름
+
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념 온라인음악전시",
   subtitle: "유니크튠즈레코드 12년, 무료 관람",
 
   rooms: [
     { name: "1관 · 시작", floor: "#2a201b", works: [
-      { id:"w01", year:"○○○○", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", youtube:"", video:"", image:"" },
-      { id:"w02", year:"○○○○", title:"첫 발매", desc:"", youtube:"", video:"", image:"" }
+      { id:"w01", year:"○○○○", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", say:"", note:"", youtube:"", video:"media/w01.mp4", image:"media/w01.jpg" },
+      { id:"w02", year:"○○○○", title:"첫 발매", desc:"", say:"", note:"", youtube:"", video:"", image:"" }
     ]},
     { name: "2관 · 아티스트", floor: "#23201f", works: [
-      { id:"w03", year:"○○○○", title:"우지원 (HAIL)", desc:"", youtube:"", video:"", image:"" },
-      { id:"w04", year:"○○○○", title:"트리스 (TRISS)", desc:"", youtube:"", video:"", image:"" },
-      { id:"w05", year:"○○○○", title:"DAZE", desc:"", youtube:"", video:"", image:"" }
+      { id:"w03", year:"○○○○", title:"우지원 (HAIL)", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
+      { id:"w04", year:"○○○○", title:"트리스 (TRISS)", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
+      { id:"w05", year:"○○○○", title:"DAZE", desc:"", say:"", note:"", youtube:"", video:"", image:"" }
     ]},
     { name: "3관 · 버티기", floor: "#1f1c22", works: [
-      { id:"w06", year:"○○○○", title:"라이브", desc:"", youtube:"", video:"", image:"" },
-      { id:"w07", year:"○○○○", title:"12주년 2LP", desc:"", youtube:"", video:"", image:"" }
+      { id:"w06", year:"○○○○", title:"라이브", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
+      { id:"w07", year:"○○○○", title:"12주년 2LP", desc:"", say:"", note:"", youtube:"", video:"", image:"" }
     ]},
     { name: "4관 · 마지막 앵콜", floor: "#2a1618", works: [
-      { id:"w08", year:"○○○○", title:"문을 닫으며", desc:"", youtube:"", video:"", image:"" },
+      { id:"w08", year:"○○○○", title:"문을 닫으며", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
       { id:"letter", type:"letter", title:"마지막 인사" }
     ]}
   ],
@@ -322,6 +328,7 @@ function ytId(u){
   return m? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(u)? u : "");
 }
 frames.forEach(f=>{
+  if(!f.type){ f.npc={ x:f.x-78, y:WALL+96 }; }
   f.yt = ytId(f.youtube);
   const src = f.image || (f.yt && C.embedYouTube ? "https://i.ytimg.com/vi/"+f.yt+"/hqdefault.jpg" : "");
   if(src){ const im=new Image(); im.src=src; f.img=im; }
@@ -475,7 +482,30 @@ function drawWorld(t){
   // avatars (sorted by y)
   const list=[...others.values()].map(o=>({...o,isMe:false}));
   list.push({ x:me.x, y:me.y, nick:ticket?ticket.nick:"", color, dir:me.dir, moving:me.moving, emote:me.emote, isMe:true });
+  frames.forEach(f=>{ if(f.npc) list.push({ x:f.npc.x, y:f.npc.y, nick:C.host||"김대표", color:"#a62233", dir:-1, moving:false, npc:true, frame:f }); });
   list.sort((a,b)=>a.y-b.y).forEach(a=>drawAvatar(a,t));
+  frames.forEach(f=>{ if(f.npc && Math.hypot(me.x-f.npc.x, me.y-f.npc.y)<170) drawSay(f); });
+}
+function hostLine(f){
+  if(f.say) return f.say;
+  if(f.note){ const m=f.note.split(/(?<=[.!?。])\s|\n/)[0]; return m.length>60? m.slice(0,58)+"…" : m; }
+  return "소개 준비 중이에요";
+}
+function wrapText(text,maxW){
+  const out=[]; let line="";
+  for(const ch of text){ const tl=line+ch; if(cx.measureText(tl).width>maxW && line){ out.push(line); line=ch; } else line=tl; }
+  if(line) out.push(line); return out.slice(0,3);
+}
+function drawSay(f){
+  const x=f.npc.x, y=f.npc.y-44;
+  cx.font="400 12px 'IBM Plex Sans KR'"; cx.textAlign="left"; cx.textBaseline="top";
+  const lines=wrapText(hostLine(f),190);
+  const w=Math.max(...lines.map(l=>cx.measureText(l).width))+22, h=lines.length*17+14;
+  const bx=Math.min(x-24, WORLD_W-w-6), by=y-h;
+  cx.fillStyle="rgba(244,231,207,.97)"; roundRect(cx,bx,by,w,h,10); cx.fill();
+  cx.beginPath(); cx.moveTo(x-6,by+h); cx.lineTo(x+6,by+h); cx.lineTo(x,by+h+8); cx.fill();
+  cx.fillStyle="#2a1d15"; lines.forEach((l,i)=>cx.fillText(l,bx+11,by+8+i*17));
+  cx.textBaseline="middle";
 }
 
 function drawAvatar(a,t){
@@ -495,7 +525,7 @@ function drawAvatar(a,t){
   const name=(a.nick||"관객").slice(0,12);
   cx.font="500 11px 'IBM Plex Sans KR'"; cx.textAlign="center"; cx.textBaseline="middle";
   const tw=cx.measureText(name).width+12;
-  cx.fillStyle=a.isMe?"rgba(243,194,107,.92)":"rgba(10,8,7,.75)"; roundRect(cx,a.x-tw/2,a.y+20,tw,17,8); cx.fill();
+  cx.fillStyle=a.isMe?"rgba(243,194,107,.92)":a.npc?"rgba(166,34,51,.95)":"rgba(10,8,7,.75)"; roundRect(cx,a.x-tw/2,a.y+20,tw,17,8); cx.fill();
   cx.fillStyle=a.isMe?"#1b120c":"#f1e9df"; cx.fillText(name,a.x,a.y+29);
   // emote bubble
   if(a.emote && performance.now()-a.emote.t<2200){
@@ -825,6 +855,7 @@ function renderModal(first){
   side.append(el("div","eyebrow",(rooms[f.room].name)+(f.year?"  ·  "+f.year:"")));
   side.append(el("h2",null,f.title));
   side.append(f.desc ? el("div","desc",f.desc) : el("div","desc ph","작품 설명을 채워 주세요."));
+  if(f.note){ const h=el("div","host"); h.append(el("div","host-who",(C.host||"김대표")+"의 한마디"), el("div","host-tx",f.note)); side.append(h); }
   const w=el("div","watching"); w.id="watching"; side.append(w);
   side.append(el("div","cm-head","COMMENTS"));
   const list=el("div","cms");
