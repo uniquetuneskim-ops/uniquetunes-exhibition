@@ -423,7 +423,7 @@ let color = (ticket && ticket.color) || COLORS[0];
 const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null };
 const keys = {};
 let path = [];             // waypoints for click-to-move
-const guide = { x: 230, y: DOORY-70, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0 };
+const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0 };
 const trail = [];          // 관객이 지나간 길 (음비맨이 따라 걷는 경로)
 let pendingOpen = null;    // frame to open on arrival
 let near = null;
@@ -543,7 +543,7 @@ function drawWorld(t){
   list.push({ x:me.x, y:me.y, nick:ticket?ticket.nick:"", color, dir:me.dir, moving:me.moving, emote:me.emote, isMe:true });
   if(ticket) list.push({ x:guide.x, y:guide.y, nick:C.host||"음비맨", npc:true, talk:!!guide.say, moving:guide.moving, dir:guide.dir, point:guide.point });
   list.sort((a,b)=>a.y-b.y).forEach(a=> a.panel ? drawPanel(a.panel) : drawAvatar(a,t));
-  if(ticket && guide.say){ if(guide.focus && !guide.focus.panel) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
+  if(ticket && guide.say){ if((guide.focus && !guide.focus.panel) || (!guide.focus && guide.say===C.hostGreeting)) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
 }
 function drawFace(f){
     const fx=f.x-f.w/2, fy=f.y-f.h/2;
@@ -764,8 +764,9 @@ function updateGuide(dt){
     let i=trail.length-1, acc=0;
     while(i>0 && acc<58){ acc+=Math.hypot(trail[i].x-trail[i-1].x, trail[i].y-trail[i-1].y); i--; }
     const p=trail[Math.max(0,i)]||{x:guide.x,y:guide.y}; tx=p.x; ty=p.y;
-    // 이미 충분히 가까우면 멈춤
+    // 이미 충분히 가까우면 멈춤 / 입장 인사 중에는 제자리
     if(Math.hypot(me.x-guide.x,me.y-guide.y)<62) { tx=guide.x; ty=guide.y; }
+    if(performance.now()<guide.greetUntil && Math.hypot(me.x-140,me.y-DOORY)<60){ tx=guide.x; ty=guide.y; }
     // 너무 멀어지면(지도 이동 등) 관객 옆으로 순간 이동
     if(Math.hypot(me.x-guide.x,me.y-guide.y)>520 || roomAt(guide.x)!==roomAt(me.x) && Math.abs(guide.x-me.x)>420){ guide.x=me.x-50; guide.y=Math.min(H-R,me.y+20); trail.length=0; }
   }
