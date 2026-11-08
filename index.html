@@ -158,7 +158,8 @@ body.open .curtain.r{transform:translateX(102%)}
 .st-h{font-family:var(--serif);font-size:20px;line-height:1.5;margin:1.8em 0 .8em;color:var(--amber2)}
 .st-link{display:inline-block;margin:6px 0 10px;font-size:13px;color:var(--amber)}
 .st-mark{height:1px;margin:1.6em 0;background:linear-gradient(90deg,transparent,rgba(243,194,107,.5),transparent)}
-@media (max-width:800px){ .panel.story{grid-template-rows:auto;display:block;overflow:auto} .panel.story .screen{position:sticky;top:0;z-index:1;height:auto;aspect-ratio:4/3} .panel.story .side{overflow:visible} }
+.st-inline{display:none}
+@media (max-width:800px){ .panel.story{grid-template-rows:auto;display:block;overflow:auto;height:calc(100vh - 40px)} .panel.story .screen{display:none} .panel.story .side{overflow:visible;padding-top:30px} .st-mark{height:auto;background:none;margin:1.2em 0} .st-inline{display:block;width:100%;border-radius:8px} }
 
 /* guestbook board */
 .gb{padding:34px 30px 26px;overflow:auto;max-height:calc(100vh - 40px)}
@@ -1011,7 +1012,7 @@ function renderModal(first){
     String(f.text||"").split(/\n\s*\n/).forEach(par=>{
       const t=par.trim(); if(!t) return;
       const m=t.match(/^\[이미지\s*(\d+)\]$/);
-      if(m){ img=Math.max(0,Math.min((f.images||[]).length-1, +m[1]-1)); const mk=el("div","st-mark"); mk.dataset.i=img; st.append(mk); return; }
+      if(m){ img=Math.max(0,Math.min((f.images||[]).length-1, +m[1]-1)); const mk=el("div","st-mark"); mk.dataset.i=img; const src=(f.images||[])[img]; if(src){ const ii=document.createElement("img"); ii.className="st-inline"; ii.src=src; ii.alt=""; ii.loading="lazy"; mk.append(ii); } st.append(mk); return; }
       const pe = t.startsWith("## ") ? el("h3","st-h",t.slice(3)) : el("p","st-p",t); pe.dataset.i=img; st.append(pe);
     });
     if(f.link){ const a=el("a","st-link","전문은 브런치에서 읽기 ↗"); a.href=f.link; a.target="_blank"; a.rel="noopener"; st.append(a); }
