@@ -112,16 +112,17 @@ body.open .curtain.r{transform:translateX(102%)}
 .panel.single{grid-template-columns:1fr;width:min(760px,100%)}
 .close{position:absolute;top:10px;right:12px;z-index:2;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);font-size:18px;color:var(--dim)}
 .close:hover{color:var(--ink)}
-.screen{background:#000;display:flex;flex-direction:column;justify-content:center;min-height:300px;position:relative}
+.screen{background:#000;display:flex;flex-direction:column;justify-content:center;min-height:300px;max-height:calc(100vh - 40px);position:relative}
 .screen iframe{width:100%;aspect-ratio:16/9;border:0;display:block}
 .screen video,.screen img{width:100%;max-height:calc(100vh - 40px);object-fit:contain;display:block}
 .screen .noscreen{aspect-ratio:16/9;display:grid;place-items:center;text-align:center;color:var(--faint);font-family:var(--mono);font-size:12px;letter-spacing:.12em;
   background:repeating-linear-gradient(45deg,rgba(255,255,255,.025) 0 14px,transparent 14px 28px),#0f0b0a}
-.side{padding:26px 24px 20px;display:flex;flex-direction:column;min-height:0;overflow:auto}
+.side{padding:26px 24px 20px;display:flex;flex-direction:column;min-height:0;max-height:calc(100vh - 40px);overflow:auto}
+.side .desc{flex:none}
 .side h2{font-family:var(--serif);font-size:26px;line-height:1.3;margin:6px 0 10px}
 .side .desc{color:var(--dim);font-size:15px;white-space:pre-wrap}
 .side .desc.ph{color:var(--faint);font-style:italic}
-.host{margin-top:18px;padding:14px 16px;border-left:3px solid var(--red2);background:rgba(166,34,51,.08);border-radius:0 8px 8px 0}
+.host{margin:14px 0 18px;padding:14px 16px;border-left:3px solid var(--red2);background:rgba(166,34,51,.08);border-radius:0 8px 8px 0}
 .host-who{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#e07a85;margin-bottom:8px}
 .host-pic{width:40px;height:44px;flex:none}
 .host-tx{font-family:var(--serif);font-size:15.5px;line-height:1.8;white-space:pre-wrap}
@@ -1060,8 +1061,8 @@ function renderModal(first){
   side.innerHTML="";
   side.append(el("div","eyebrow",(rooms[f.room].name)+(f.year?"  ·  "+f.year:"")));
   side.append(el("h2",null,f.title));
-  if(f.desc) side.append(el("div","desc",f.desc)); else if(f.type!=="story") side.append(el("div","desc ph","작품 설명을 채워 주세요."));
   if(f.note){ const h=el("div","host"); const hw=el("div","host-who"); const pi=document.createElement("img"); pi.src=UMBI_SRC; pi.alt=""; pi.className="host-pic"; hw.append(pi, document.createTextNode((C.host||"음비맨")+"의 한마디")); h.append(hw, el("div","host-tx",f.note)); side.append(h); }
+  if(f.desc) side.append(el("div","desc",f.desc)); else if(f.type!=="story") side.append(el("div","desc ph","작품 설명을 채워 주세요."));
   const w=el("div","watching"); w.id="watching"; side.append(w);
   if(f.type==="story"){
     const st=el("div","st-text");
