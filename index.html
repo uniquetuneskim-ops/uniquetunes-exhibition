@@ -31,6 +31,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 #gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:auto;padding:24px;
   background:radial-gradient(ellipse at 50% 0%,rgba(243,194,107,.18),transparent 60%),var(--bg)}
 .gate-inner{text-align:center;max-width:520px;width:100%;-webkit-user-select:text;user-select:text}
+.gate-logo{width:min(320px,70%);display:block;margin:0 auto 18px;opacity:.95}
 .gate-inner h1{font-family:var(--serif);font-size:clamp(34px,6vw,54px);line-height:1.2;margin:14px 0 8px}
 .gate-inner .lead{color:var(--dim);margin-bottom:30px}
 .ticket{position:relative;display:flex;text-align:left;background:linear-gradient(135deg,#f6ead4,#e9d6b4);color:#2a1d15;
@@ -183,6 +184,7 @@ const CONFIG = {
   embedYouTube: true,
 
   host: "음비맨",   // 도슨트 캐릭터 이름
+  hostGreeting: "어서 오세요. 오른쪽 문으로 같이 가 볼까요?",   // 로비에서 처음 하는 말
 
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념 온라인음악전시",
@@ -230,7 +232,7 @@ const CONFIG = {
 <canvas id="minimap" class="hidden"></canvas>
 
 <div class="hud-top hidden" id="hudTop">
-  <div class="brand"><b>UT</b> 폐업기념 온라인음악전시</div>
+  <div class="brand"><img src="media/logo.png" alt="UNIQUETUNES" style="height:14px;vertical-align:-1px;margin-right:8px;opacity:.9">폐업기념 온라인음악전시</div>
   <div class="roomname" id="roomName">로비</div>
   <div class="live"><i></i><span id="liveCount">관람 중</span></div>
 </div>
@@ -256,7 +258,8 @@ const CONFIG = {
 <!-- ============ GATE ============ -->
 <div id="gate">
   <div class="gate-inner">
-    <div class="eyebrow">UNIQUETUNES RECORDS · 12 YEARS</div>
+    <img class="gate-logo" src="media/logo.png" alt="UNIQUETUNES">
+    <div class="eyebrow">RECORDS · 12 YEARS</div>
     <h1 id="gTitle"></h1>
     <p class="lead" id="gSub"></p>
     <div class="ticket" id="ticket">
@@ -333,6 +336,7 @@ function umbiFaceSVG(talk){
 }
 const UMBI=[false,true].map(t=>{ const im=new Image(); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(umbiFaceSVG(t)); return im; });
 const UMBI_SRC=UMBI[0].src;
+const LOGO=new Image(); LOGO.src="media/logo.png";
 
 /* =================== WORLD GEOMETRY =================== */
 const WALL = 120;          // 작품이 걸리는 윗벽 높이
@@ -369,7 +373,6 @@ function ytId(u){
   return m? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(u)? u : "");
 }
 frames.forEach(f=>{
-  if(!f.type){ f.npc={ x:f.x-78, y:WALL+96 }; }
   f.yt = ytId(f.youtube);
   const src = f.image || (f.yt && C.embedYouTube ? "https://i.ytimg.com/vi/"+f.yt+"/hqdefault.jpg" : "");
   if(src){ const im=new Image(); im.src=src; f.img=im; }
@@ -381,6 +384,8 @@ let color = (ticket && ticket.color) || COLORS[0];
 const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null };
 const keys = {};
 let path = [];             // waypoints for click-to-move
+const guide = { x: 230, y: DOORY-70, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0 };
+const trail = [];          // 관객이 지나간 길 (음비맨이 따라 걷는 경로)
 let pendingOpen = null;    // frame to open on arrival
 let near = null;
 let modalFrame = null;
@@ -405,6 +410,7 @@ $("gateForm").addEventListener("submit", e=>{
   setTimeout(enter, 900);
 });
 function enter(){
+  guide.greetUntil = performance.now()+9000;
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
@@ -444,8 +450,8 @@ function drawWorld(t){
     cx.strokeStyle="rgba(255,255,255,.025)"; cx.lineWidth=1;
     for(let y=WALL+28;y<H;y+=28){ cx.beginPath(); cx.moveTo(r.x,y); cx.lineTo(r.x+r.w,y); cx.stroke(); }
     // floor title
-    cx.fillStyle="rgba(241,233,223,.06)"; cx.font="700 54px 'Gowun Batang'"; cx.textAlign="center"; cx.textBaseline="middle";
-    cx.fillText(r.lobby ? C.label : r.name, r.x+r.w/2, H-80);
+    if(r.lobby && LOGO.complete && LOGO.naturalWidth){ const lw=420, lh=lw*LOGO.naturalHeight/LOGO.naturalWidth; cx.globalAlpha=.08; cx.drawImage(LOGO, r.x+r.w/2-lw/2, H-80-lh/2, lw, lh); cx.globalAlpha=1; }
+    else { cx.fillStyle="rgba(241,233,223,.06)"; cx.font="700 54px 'Gowun Batang'"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(r.lobby ? C.label : r.name, r.x+r.w/2, H-80); }
     // wall
     const g=cx.createLinearGradient(0,0,0,WALL); g.addColorStop(0,"#3a302a"); g.addColorStop(1,"#2b231f");
     cx.fillStyle=g; cx.fillRect(r.x,0,r.w,WALL);
@@ -454,6 +460,8 @@ function drawWorld(t){
     cx.fillStyle="rgba(243,194,107,.8)"; cx.font="500 11px 'IBM Plex Mono'"; cx.textAlign="left";
     cx.fillText((r.lobby?"LOBBY":"ROOM "+ri)+"  ·  "+r.name, r.x+18, 16);
   });
+  // lobby wall logo
+  if(LOGO.complete && LOGO.naturalWidth){ const lw=200, lh=lw*LOGO.naturalHeight/LOGO.naturalWidth; cx.globalAlpha=.9; cx.drawImage(LOGO, 495-lw/2, 58-lh/2, lw, lh); cx.globalAlpha=1; }
   // lobby entrance text
   cx.fillStyle="rgba(241,233,223,.9)"; cx.font="700 26px 'Gowun Batang'"; cx.textAlign="center";
   cx.fillText(C.title, 310, WALL+110);
@@ -523,9 +531,9 @@ function drawWorld(t){
   // avatars (sorted by y)
   const list=[...others.values()].map(o=>({...o,isMe:false}));
   list.push({ x:me.x, y:me.y, nick:ticket?ticket.nick:"", color, dir:me.dir, moving:me.moving, emote:me.emote, isMe:true });
-  frames.forEach(f=>{ if(f.npc) list.push({ x:f.npc.x, y:f.npc.y, nick:C.host||"음비맨", color:"#a62233", dir:-1, moving:false, npc:true, frame:f }); });
+  if(ticket) list.push({ x:guide.x, y:guide.y, nick:C.host||"음비맨", npc:true, talk:!!guide.say, moving:guide.moving, dir:guide.dir, point:guide.point });
   list.sort((a,b)=>a.y-b.y).forEach(a=>drawAvatar(a,t));
-  frames.forEach(f=>{ if(f.npc && Math.hypot(me.x-f.npc.x, me.y-f.npc.y)<170) drawSay(f); });
+  if(ticket && guide.say){ if(guide.focus) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
 }
 function hostLine(f){
   if(f.say) return f.say;
@@ -537,31 +545,33 @@ function wrapText(text,maxW){
   for(const ch of text){ const tl=line+ch; if(cx.measureText(tl).width>maxW && line){ out.push(line); line=ch; } else line=tl; }
   if(line) out.push(line); return out.slice(0,3);
 }
-function drawSay(f){
-  const x=f.npc.x, y=f.npc.y-64;
+function drawSayAt(x,y,text,below){
   cx.font="400 12px 'IBM Plex Sans KR'"; cx.textAlign="left"; cx.textBaseline="top";
-  const lines=wrapText(hostLine(f),190);
+  const lines=wrapText(text,190);
   const w=Math.max(...lines.map(l=>cx.measureText(l).width))+22, h=lines.length*17+14;
-  const bx=Math.min(x-24, WORLD_W-w-6), by=y-h;
+  const bx=Math.max(6, Math.min(x-24, WORLD_W-w-6)), by= below ? y+8 : y-h;
   cx.fillStyle="rgba(244,231,207,.97)"; roundRect(cx,bx,by,w,h,10); cx.fill();
-  cx.beginPath(); cx.moveTo(x-6,by+h); cx.lineTo(x+6,by+h); cx.lineTo(x,by+h+8); cx.fill();
+  cx.beginPath();
+  if(below){ cx.moveTo(x-6,by); cx.lineTo(x+6,by); cx.lineTo(x,by-8); } else { cx.moveTo(x-6,by+h); cx.lineTo(x+6,by+h); cx.lineTo(x,by+h+8); }
+  cx.fill();
   cx.fillStyle="#2a1d15"; lines.forEach((l,i)=>cx.fillText(l,bx+11,by+8+i*17));
   cx.textBaseline="middle";
 }
 
 function drawDocent(a,t){
-  const f=a.frame, talking=Math.hypot(me.x-a.x,me.y-a.y)<170;
-  const x=a.x, y=a.y;
-  cx.fillStyle="rgba(0,0,0,.45)"; cx.beginPath(); cx.ellipse(x,y+14,17,6,0,0,Math.PI*2); cx.fill();
+  const talking=a.talk, bob=a.moving? Math.abs(Math.sin(t/120))*3 : 0;
+  const x=a.x, y=a.y-bob;
+  cx.fillStyle="rgba(0,0,0,.45)"; cx.beginPath(); cx.ellipse(a.x,a.y+14,17,6,0,0,Math.PI*2); cx.fill();
   // body (jacket)
   cx.fillStyle="#262a33"; roundRect(cx,x-16,y-8,32,24,9); cx.fill();
   cx.fillStyle="#f1e9df"; cx.beginPath(); cx.moveTo(x-6,y-8); cx.lineTo(x+6,y-8); cx.lineTo(x,y+4); cx.closePath(); cx.fill();
   // pointing arm
   const lift = talking ? Math.sin(t/260)*3 : 0;
   cx.strokeStyle="#262a33"; cx.lineWidth=7; cx.lineCap="round"; cx.beginPath();
-  if(talking){ cx.moveTo(x+12,y-3); cx.lineTo(x+26,y-20+lift); } else { cx.moveTo(x+13,y-3); cx.lineTo(x+17,y+10); }
+  const pd = a.point||1;
+  if(talking){ cx.moveTo(x+12*pd,y-3); cx.lineTo(x+26*pd,y-20+lift); } else { cx.moveTo(x+13,y-3); cx.lineTo(x+17,y+10); }
   cx.stroke();
-  cx.fillStyle="#f3cdb0"; cx.beginPath(); talking? cx.arc(x+27,y-22+lift,4.5,0,7) : cx.arc(x+17,y+12,4,0,7); cx.fill();
+  cx.fillStyle="#f3cdb0"; cx.beginPath(); talking? cx.arc(x+27*pd,y-22+lift,4.5,0,7) : cx.arc(x+17,y+12,4,0,7); cx.fill();
   // head
   const im = UMBI[talking && Math.floor(t/170)%2 ? 1 : 0];
   if(im.complete) cx.drawImage(im, x-25, y-60, 50, 55);
@@ -664,6 +674,7 @@ function step(dt){
     if(dx) me.dir = dx>0?1:-1;
     if(path.length && !valid(nx,me.y) && !valid(me.x,ny)) path=[];
   }
+  updateGuide(dt);
   // nearest frame
   let best=null, bd=75;
   frames.forEach(f=>{ const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<bd){bd=d;best=f;} });
@@ -676,6 +687,35 @@ function step(dt){
   if(room && now-lastSent>250 && pos!==lastSentPos){ lastSent=now; lastSentPos=pos; room.presence({x:Math.round(me.x),y:Math.round(me.y),dir:me.dir,m:me.moving?1:0}).catch(()=>{}); }
   // others interpolate
   others.forEach(o=>{ o.x+=(o.tx-o.x)*Math.min(1,dt*10); o.y+=(o.ty-o.y)*Math.min(1,dt*10); });
+}
+
+function updateGuide(dt){
+  // 관객 발자취 기록
+  const last=trail[trail.length-1];
+  if(!last || Math.hypot(last.x-me.x,last.y-me.y)>6){ trail.push({x:me.x,y:me.y}); if(trail.length>200) trail.shift(); }
+  // 가장 가까운 영상 액자 (도슨트가 설명할 대상)
+  let focus=null, fd=95;
+  frames.forEach(f=>{ if(f.type) return; const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<fd){fd=d;focus=f;} });
+  if(focus && roomAt(guide.x)!==focus.room) focus=null;   // 같은 방에 도착한 뒤에 설명
+  let tx, ty;
+  if(focus){ tx=focus.x-74; ty=WALL+52; }
+  else {
+    // 관객 바로 뒤 발자취를 따라감
+    let i=trail.length-1, acc=0;
+    while(i>0 && acc<58){ acc+=Math.hypot(trail[i].x-trail[i-1].x, trail[i].y-trail[i-1].y); i--; }
+    const p=trail[Math.max(0,i)]||{x:guide.x,y:guide.y}; tx=p.x; ty=p.y;
+    // 이미 충분히 가까우면 멈춤
+    if(Math.hypot(me.x-guide.x,me.y-guide.y)<62) { tx=guide.x; ty=guide.y; }
+    // 너무 멀어지면(지도 이동 등) 관객 옆으로 순간 이동
+    if(Math.hypot(me.x-guide.x,me.y-guide.y)>520 || roomAt(guide.x)!==roomAt(me.x) && Math.abs(guide.x-me.x)>420){ guide.x=me.x-50; guide.y=Math.min(H-R,me.y+20); trail.length=0; }
+  }
+  const dx=tx-guide.x, dy=ty-guide.y, d=Math.hypot(dx,dy), sp=260*dt;
+  guide.moving = d>4;
+  if(guide.moving){ const k=Math.min(1,sp/d); guide.x+=dx*k; guide.y+=dy*k; if(Math.abs(dx)>1) guide.dir=dx>0?1:-1; }
+  guide.focus=focus;
+  if(focus && d<12){ guide.say=hostLine(focus); guide.point = focus.x>guide.x?1:-1; }
+  else if(performance.now()<guide.greetUntil){ guide.say=C.hostGreeting||""; guide.point=1; }
+  else guide.say="";
 }
 
 let lastT=performance.now();
