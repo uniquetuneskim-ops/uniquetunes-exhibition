@@ -142,6 +142,22 @@ body.open .curtain.r{transform:translateX(102%)}
 .cm-form .note{font-size:12px;color:var(--faint)}
 .cm-form .btn{padding:9px 18px}
 
+/* story (글+이미지) */
+.panel.story{grid-template-columns:1.15fr 1fr;height:calc(100vh - 40px);grid-template-rows:minmax(0,1fr)}
+.panel.story .side{min-height:0}
+.panel.story .screen{position:relative;min-height:0;height:100%;background:#0c0908;display:block}
+.st-img{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity .9s ease}
+.st-img.on{opacity:1}
+.st-img img{width:100%;height:100%;object-fit:contain}
+.st-img .noscreen{width:100%;height:100%}
+.st-dots{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:8px;justify-content:center}
+.st-dots span{width:7px;height:7px;border-radius:50%;background:rgba(241,233,223,.3);transition:background .4s}
+.st-dots span.on{background:var(--amber)}
+.st-text{margin-top:18px}
+.st-p{font-family:var(--serif);font-size:16.5px;line-height:1.95;margin-bottom:1.1em;color:var(--ink);white-space:pre-wrap}
+.st-mark{height:1px;margin:1.6em 0;background:linear-gradient(90deg,transparent,rgba(243,194,107,.5),transparent)}
+@media (max-width:800px){ .panel.story{grid-template-rows:auto;display:block;overflow:auto} .panel.story .screen{position:sticky;top:0;z-index:1;height:auto;aspect-ratio:4/3} .panel.story .side{overflow:visible} }
+
 /* guestbook board */
 .gb{padding:34px 30px 26px;overflow:auto;max-height:calc(100vh - 40px)}
 .gb h2{font-family:var(--serif);font-size:30px;margin:8px 0 6px}
@@ -202,7 +218,9 @@ const CONFIG = {
   rooms: [
     { name: "1관 · 시작", floor: "#2a201b", works: [
       { id:"w01", year:"2014", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", say:"", note:"로디아는 수란과 에피의 2인조 EDM 프로젝트였어요. 수란이 작곡한 데모를 가지고 프랑스에 가서 Ray PD 와 음악작업을 해왔어요. 서울로 돌아와서 지하 골방에 처박혀서 제가 직접 녹음을 받았어요. \n2014년 7월 9일.\n유니크튠즈의 첫 음원이 발매한 날이에요\n멜론 일렉트로닉차트 30위까지 올랐어요.", youtube:"", video:"media/w01.mp4", image:"media/w01.jpg" },
-      { id:"w02", year:"○○○○", title:"첫 발매", desc:"", say:"", note:"", youtube:"", video:"", image:"" }
+      { id:"w02", type:"story", year:"○○○○", title:"(브런치 글 제목)", desc:"", say:"", note:"",
+        images:["", ""],   // 이미지 2장
+        text:"" }   // 글 본문. 빈 줄로 문단 구분, [이미지2] 라고 적은 줄부터 두 번째 이미지로 바뀜
     ]},
     { name: "2관 · 아티스트", floor: "#23201f", works: [
       { id:"w03", year:"○○○○", title:"우지원 (HAIL)", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
@@ -364,7 +382,7 @@ rooms.forEach((r,ri)=>{
   const n=r.works.length;
   r.works.forEach((wk,i)=>{
     const fx = r.x + (i+1)*r.w/(n+1);
-    frames.push({ ...wk, room:ri, x:fx, y:62, w: wk.type ? 132 : 168, h: wk.type ? 82 : 96, vx:fx, vy:WALL+46 });
+    frames.push({ ...wk, room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+46 });
   });
 });
 const bounds = rooms.slice(1).map(r=>r.x);
@@ -383,7 +401,7 @@ function ytId(u){
 }
 frames.forEach(f=>{
   f.yt = ytId(f.youtube);
-  const src = f.image || (f.yt && C.embedYouTube ? "https://i.ytimg.com/vi/"+f.yt+"/hqdefault.jpg" : "");
+  const src = f.image || (f.type==="story" && f.images && f.images[0]) || (f.yt && C.embedYouTube ? "https://i.ytimg.com/vi/"+f.yt+"/hqdefault.jpg" : "");
   if(src){ const im=new Image(); im.src=src; f.img=im; }
 });
 
@@ -522,9 +540,13 @@ function drawWorld(t){
         cx.fillStyle="rgba(0,0,0,.25)"; cx.fillRect(fx,fy,f.w,f.h);
       }
       // play glyph
-      cx.fillStyle = (f.video||f.yt) ? "rgba(243,194,107,.95)" : "rgba(243,194,107,.35)";
-      cx.beginPath(); cx.moveTo(f.x-9,f.y-12); cx.lineTo(f.x+13,f.y); cx.lineTo(f.x-9,f.y+12); cx.closePath(); cx.fill();
-      if(!f.video && !f.yt){ cx.fillStyle="rgba(168,154,140,.6)"; cx.font="500 9px 'IBM Plex Mono'"; cx.textAlign="center"; cx.fillText("COMING SOON", f.x, f.y+28); }
+      const ready = f.type==="story" ? !!f.text : (f.video||f.yt);
+      cx.fillStyle = ready ? "rgba(243,194,107,.95)" : "rgba(243,194,107,.35)";
+      if(f.type==="story"){ // open book
+        cx.beginPath(); cx.moveTo(f.x,f.y-8); cx.quadraticCurveTo(f.x-10,f.y-13,f.x-20,f.y-10); cx.lineTo(f.x-20,f.y+10); cx.quadraticCurveTo(f.x-10,f.y+7,f.x,f.y+12); cx.quadraticCurveTo(f.x+10,f.y+7,f.x+20,f.y+10); cx.lineTo(f.x+20,f.y-10); cx.quadraticCurveTo(f.x+10,f.y-13,f.x,f.y-8); cx.fill();
+        cx.strokeStyle="rgba(12,9,8,.7)"; cx.lineWidth=1.5; cx.beginPath(); cx.moveTo(f.x,f.y-8); cx.lineTo(f.x,f.y+12); cx.stroke();
+      } else { cx.beginPath(); cx.moveTo(f.x-9,f.y-12); cx.lineTo(f.x+13,f.y); cx.lineTo(f.x-9,f.y+12); cx.closePath(); cx.fill(); }
+      if(!ready){ cx.fillStyle="rgba(168,154,140,.6)"; cx.font="500 9px 'IBM Plex Mono'"; cx.textAlign="center"; cx.fillText("COMING SOON", f.x, f.y+28); }
     }
     // lamp
     cx.fillStyle="#1a1411"; cx.fillRect(f.x-14,4,28,6);
@@ -688,7 +710,7 @@ function step(dt){
   let best=null, bd=75;
   frames.forEach(f=>{ const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<bd){bd=d;best=f;} });
   if(best!==near){ near=best; const pr=$("prompt");
-    if(near && !modalFrame){ pr.textContent = (near.type==="guestbook"?"방명록 열기":near.type==="letter"?"마지막 인사 읽기":"「"+near.title+"」 감상하기") + (matchMedia("(pointer:coarse)").matches?" · 탭":" · Space"); pr.classList.remove("hidden"); pr.onclick=()=>openFrame(near); }
+    if(near && !modalFrame){ pr.textContent = (near.type==="guestbook"?"방명록 열기":near.type==="letter"?"마지막 인사 읽기":near.type==="story"?"「"+near.title+"」 읽기":"「"+near.title+"」 감상하기") + (matchMedia("(pointer:coarse)").matches?" · 탭":" · Space"); pr.classList.remove("hidden"); pr.onclick=()=>openFrame(near); }
     else pr.classList.add("hidden"); }
   $("roomName").textContent = rooms[roomAt(me.x)].name;
   // send presence
@@ -704,7 +726,7 @@ function updateGuide(dt){
   if(!last || Math.hypot(last.x-me.x,last.y-me.y)>6){ trail.push({x:me.x,y:me.y}); if(trail.length>200) trail.shift(); }
   // 가장 가까운 영상 액자 (도슨트가 설명할 대상)
   let focus=null, fd=95;
-  frames.forEach(f=>{ if(f.type) return; const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<fd){fd=d;focus=f;} });
+  frames.forEach(f=>{ if(f.type && f.type!=="story") return; const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<fd){fd=d;focus=f;} });
   if(focus && roomAt(guide.x)!==focus.room) focus=null;   // 같은 방에 도착한 뒤에 설명
   let tx, ty;
   if(focus){ tx=focus.x-74; ty=WALL+52; }
@@ -947,7 +969,15 @@ function renderModal(first){
     const p=el("div","panel");
     const x=el("button","close","✕"); x.onclick=closeModal; p.append(x);
     const sc=el("div","screen");
-    if(f.yt){
+    if(f.type==="story"){
+      p.classList.add("story");
+      (f.images||[]).forEach((src,i)=>{ const box=el("div","st-img"+(i===0?" on":"")); box.dataset.i=i;
+        if(src){ const im=document.createElement("img"); im.src=src; im.alt=""; box.append(im); } else box.append(el("div","noscreen","이미지 "+(i+1)+" 준비 중"));
+        sc.append(box); });
+      const dots=el("div","st-dots"); (f.images||[]).forEach((_,i)=>dots.append(el("span",i===0?"on":"")));
+      sc.append(dots);
+    }
+    else if(f.yt){
       if(!audio.paused){ bgmWasPlaying=true; audio.pause(); }
       if(C.embedYouTube){ const ifr=document.createElement("iframe"); ifr.src="https://www.youtube-nocookie.com/embed/"+f.yt+"?rel=0&playsinline=1&autoplay=1";
         ifr.allow="autoplay; encrypted-media; picture-in-picture; fullscreen"; ifr.allowFullscreen=true; ifr.title=f.title; ifr.referrerPolicy="strict-origin-when-cross-origin"; sc.append(ifr); }
@@ -964,12 +994,25 @@ function renderModal(first){
     M.append(p);
   }
   const side=$("side"); if(!side) return;
+  const keepTop=side.scrollTop, keepPanel=(M.querySelector(".panel")||{}).scrollTop||0;
   side.innerHTML="";
   side.append(el("div","eyebrow",(rooms[f.room].name)+(f.year?"  ·  "+f.year:"")));
   side.append(el("h2",null,f.title));
-  side.append(f.desc ? el("div","desc",f.desc) : el("div","desc ph","작품 설명을 채워 주세요."));
+  if(f.desc) side.append(el("div","desc",f.desc)); else if(f.type!=="story") side.append(el("div","desc ph","작품 설명을 채워 주세요."));
   if(f.note){ const h=el("div","host"); const hw=el("div","host-who"); const pi=document.createElement("img"); pi.src=UMBI_SRC; pi.alt=""; pi.className="host-pic"; hw.append(pi, document.createTextNode((C.host||"음비맨")+"의 한마디")); h.append(hw, el("div","host-tx",f.note)); side.append(h); }
   const w=el("div","watching"); w.id="watching"; side.append(w);
+  if(f.type==="story"){
+    const st=el("div","st-text");
+    if(!f.text) st.append(el("p","desc ph","글을 채워 주세요."));
+    let img=0;
+    String(f.text||"").split(/\n\s*\n/).forEach(par=>{
+      const t=par.trim(); if(!t) return;
+      const m=t.match(/^\[이미지\s*(\d)\]$/);
+      if(m){ img=Math.max(0,Math.min((f.images||[]).length-1, +m[1]-1)); const mk=el("div","st-mark"); mk.dataset.i=img; st.append(mk); return; }
+      const pe=el("p","st-p",t); pe.dataset.i=img; st.append(pe);
+    });
+    side.append(st);
+  }
   side.append(el("div","cm-head","COMMENTS"));
   const list=el("div","cms");
   const items=visitors.filter(v=>v.notes[f.id]).map(v=>({v,n:v.notes[f.id]})).sort((a,b)=>b.n.t-a.n.t);
@@ -986,8 +1029,17 @@ function renderModal(first){
     c.append(who, el("div","tx",n.text)); list.append(c);
   });
   side.append(list);
-  side.append(commentForm(f.id, myDoc && myDoc.notes[f.id] ? myDoc.notes[f.id].text : "", draft, 500, "이 영상을 보고 떠오른 이야기", t=>saveComment(f.id,t)));
+  side.append(commentForm(f.id, myDoc && myDoc.notes[f.id] ? myDoc.notes[f.id].text : "", draft, 500, f.type==="story"?"이 글을 읽고 떠오른 이야기":"이 영상을 보고 떠오른 이야기", t=>saveComment(f.id,t)));
   updateWatching();
+  side.scrollTop=keepTop; const pnl=M.querySelector(".panel"); if(pnl) pnl.scrollTop=keepPanel;
+  if(f.type==="story"){ const upd=()=>storyScroll(M); side.onscroll=upd; if(pnl) pnl.onscroll=upd; requestAnimationFrame(()=>requestAnimationFrame(upd)); }
+}
+function storyScroll(M){
+  const ps=[...M.querySelectorAll(".st-p,.st-mark")]; if(!ps.length) return;
+  const mid=innerHeight*0.55; let cur=0;
+  ps.forEach(e=>{ if(e.getBoundingClientRect().top<mid) cur=+e.dataset.i||0; });
+  M.querySelectorAll(".st-img").forEach(b=>b.classList.toggle("on", +b.dataset.i===cur));
+  M.querySelectorAll(".st-dots span").forEach((d,i)=>d.classList.toggle("on", i===cur));
 }
 
 function commentForm(key, existing, draft, max, ph, onSave){
