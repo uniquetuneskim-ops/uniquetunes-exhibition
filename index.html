@@ -183,7 +183,7 @@ const CONFIG = {
 
   rooms: [
     { name: "1관 · 시작", floor: "#2a201b", works: [
-      { id:"w01", year:"○○○○", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", youtube:"https://youtu.be/rkDa9Vwhk7Y", video:"", image:"" },
+      { id:"w01", year:"○○○○", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", youtube:"", video:"", image:"" },
       { id:"w02", year:"○○○○", title:"첫 발매", desc:"", youtube:"", video:"", image:"" }
     ]},
     { name: "2관 · 아티스트", floor: "#23201f", works: [
@@ -812,7 +812,7 @@ function renderModal(first){
         const a=el("a",null,"유튜브에서 보기 ↗"); a.href="https://www.youtube.com/watch?v="+f.yt; a.target="_blank"; a.rel="noopener"; a.style.cssText="display:inline-block;margin-top:12px;color:#f3c26b";
         box.append(a); n.append(box); sc.append(n); }
     }
-    else if(f.video){ const v=document.createElement("video"); v.src=f.video; v.controls=true; v.playsInline=true; v.preload="metadata"; if(f.image) v.poster=f.image;
+    else if(f.video){ const v=document.createElement("video"); v.src=f.video; v.controls=true; v.playsInline=true; v.preload="auto"; v.autoplay=true; if(f.image) v.poster=f.image;
       v.onplay=()=>{ if(!audio.paused){ bgmWasPlaying=true; audio.pause(); } }; sc.append(v); }
     else if(f.image){ const im=document.createElement("img"); im.src=f.image; im.alt=f.title; sc.append(im); }
     else { const n=el("div","noscreen"); n.append(document.createTextNode("영상 준비 중")); sc.append(n); }
