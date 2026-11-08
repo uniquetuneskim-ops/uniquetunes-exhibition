@@ -214,7 +214,7 @@ const CONFIG = {
   embedYouTube: true,
 
   host: "음비맨",   // 도슨트 캐릭터 이름
-  hostGreeting: "어서 오세요. 오른쪽 문으로 같이 가 볼까요?",   // 로비에서 처음 하는 말
+  hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 이쪽으로 따라오실래요?",   // 로비에서 처음 하는 말
 
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념 온라인음악전시",
@@ -449,7 +449,7 @@ $("gateForm").addEventListener("submit", e=>{
   setTimeout(enter, 900);
 });
 function enter(){
-  guide.greetUntil = performance.now()+9000;
+  guide.greetUntil = performance.now()+11000;
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
@@ -603,11 +603,11 @@ function hostLine(f){
 function wrapText(text,maxW){
   const out=[]; let line="";
   for(const ch of text){ const tl=line+ch; if(cx.measureText(tl).width>maxW && line){ out.push(line); line=ch; } else line=tl; }
-  if(line) out.push(line); return out.slice(0,3);
+  if(line) out.push(line); return out.slice(0,4);
 }
 function drawSayAt(x,y,text,below){
   cx.font="400 12px 'IBM Plex Sans KR'"; cx.textAlign="left"; cx.textBaseline="top";
-  const lines=wrapText(text,190);
+  const lines=wrapText(text,210);
   const w=Math.max(...lines.map(l=>cx.measureText(l).width))+22, h=lines.length*17+14;
   const bx=Math.max(6, Math.min(x-24, WORLD_W-w-6)), by= below ? y+8 : y-h;
   cx.fillStyle="rgba(244,231,207,.97)"; roundRect(cx,bx,by,w,h,10); cx.fill();
