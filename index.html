@@ -481,6 +481,8 @@ $("gateForm").addEventListener("submit", e=>{
 });
 function enter(){
   guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+(C.hostGreeting2?9000:0);
+  try{ const sp=JSON.parse(sessionStorage.getItem("ut12_pos")); if(sp && Date.now()-sp.t<30*60*1000 && sp.x>620){ me.x=sp.x; me.y=sp.y; guide.x=sp.x-50; guide.y=Math.min(H-R,sp.y+20); guide.greetUntil=0; guide.greet2Until=0; guide.room=roomAt(sp.x); guide.seen[guide.room]=1; } }catch(e){}
+  setInterval(()=>{ try{ sessionStorage.setItem("ut12_pos", JSON.stringify({x:Math.round(me.x),y:Math.round(me.y),t:Date.now()})); }catch(e){} }, 1000);
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
@@ -1036,8 +1038,14 @@ function openFrame(f){
   if(room) room.presence({w:f.id}).catch(()=>{});
   renderModal(true);
   $("modal").classList.remove("hidden");
+  try{ if(!(history.state&&history.state.utModal)) history.pushState({utModal:1},""); }catch(e){}
 }
 function closeModal(){
+  try{ if(history.state&&history.state.utModal){ history.back(); return; } }catch(e){}
+  doCloseModal();
+}
+window.addEventListener("popstate",()=>{ if(!$("modal").classList.contains("hidden")) doCloseModal(); });
+function doCloseModal(){
   const v=$("modal").querySelector("video"); if(v){ v.pause(); }
   if(bgmWasPlaying){ audio.play().catch(()=>{}); bgmWasPlaying=false; }
   $("modal").classList.add("hidden"); $("modal").innerHTML=""; modalFrame=null; near=null;
