@@ -639,9 +639,9 @@ function drawPanel(f){
   cx.fillStyle=sg; cx.beginPath(); cx.ellipse(f.x,base,isNear?130:105,46,0,0,Math.PI*2); cx.fill();
   cx.fillStyle="rgba(0,0,0,.45)"; cx.beginPath(); cx.ellipse(f.x,base,f.w/2+6,8,0,0,Math.PI*2); cx.fill();
   cx.fillStyle="#2a211c"; cx.fillRect(f.x-f.w/2+14,f.y+f.h/2,6,34); cx.fillRect(f.x+f.w/2-20,f.y+f.h/2,6,34);
-  cx.fillStyle="#3a302a"; roundRect(cx,f.x-f.w/2-12,f.y-f.h/2-40,f.w+24,f.h+50,6); cx.fill();
+  cx.fillStyle="#3a302a"; roundRect(cx,f.x-f.w/2-12,f.y-f.h/2-56,f.w+24,f.h+66,6); cx.fill();
   drawFace(f);
-  drawPlaque(f, f.y-f.h/2-26);
+  drawPlaque(f, f.y-f.h/2-40);
 }
 function hostLine(f){
   if(f.say) return f.say;
