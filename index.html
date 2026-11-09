@@ -216,6 +216,7 @@ const CONFIG = {
 
   host: "음비맨",   // 도슨트 캐릭터 이름
   hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 이쪽으로 따라오실래요?",   // 로비에서 처음 하는 말
+  hostGreeting2: "오른쪽으로 쭉 걸어가시면 작품들과 설명을 차례로 보실 수 있어요.",   // 이어서 오른쪽으로 걸으며 하는 말
 
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념\n온라인 음악전시",   // \n 자리에서 줄바꿈
@@ -435,7 +436,7 @@ let color = (ticket && ticket.color) || COLORS[0];
 const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null };
 const keys = {};
 let path = [];             // waypoints for click-to-move
-const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
+const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
 const trail = [];          // 관객이 지나간 길 (음비맨이 따라 걷는 경로)
 let pendingOpen = null;    // frame to open on arrival
 let near = null;
@@ -461,7 +462,7 @@ $("gateForm").addEventListener("submit", e=>{
   setTimeout(enter, 900);
 });
 function enter(){
-  guide.greetUntil = performance.now()+11000;
+  guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+9000;
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
@@ -572,7 +573,7 @@ function drawWorld(t){
   list.push({ x:me.x, y:me.y, nick:ticket?ticket.nick:"", color, dir:me.dir, moving:me.moving, emote:me.emote, isMe:true });
   if(ticket) list.push({ x:guide.x, y:guide.y, nick:C.host||"음비맨", npc:true, talk:!!guide.say, moving:guide.moving, dir:guide.dir, point:guide.point });
   list.sort((a,b)=>a.y-b.y).forEach(a=> a.panel ? drawPanel(a.panel) : drawAvatar(a,t));
-  if(ticket && guide.say){ if((guide.focus && !guide.focus.panel) || (!guide.focus && (guide.say===C.hostGreeting || (guide.say===guide.roomSay && !rooms[roomAt(guide.x)].introEn)))) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
+  if(ticket && guide.say){ if((guide.focus && !guide.focus.panel) || (!guide.focus && (guide.say===C.hostGreeting || guide.say===C.hostGreeting2 || (guide.say===guide.roomSay && !rooms[roomAt(guide.x)].introEn)))) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
 }
 function drawFace(f){
     const fx=f.x-f.w/2, fy=f.y-f.h/2;
@@ -781,7 +782,7 @@ function step(dt){
 function updateGuide(dt){
   // 새 전시실에 들어서면 소개
   const ri=roomAt(me.x);
-  if(ri!==guide.room){ guide.room=ri; const r=rooms[ri]; if(r.intro && !guide.seen[ri]){ guide.seen[ri]=1; guide.roomSay=r.intro.replace(/\n/g," "); guide.roomSayUntil=performance.now()+12000; guide.greetUntil=0; } }
+  if(ri!==guide.room){ guide.room=ri; const r=rooms[ri]; if(r.intro && !guide.seen[ri]){ guide.seen[ri]=1; guide.roomSay=r.intro.replace(/\n/g," "); guide.roomSayUntil=performance.now()+12000; guide.greetUntil=0; guide.greet2Until=0; } }
   // 관객 발자취 기록
   const last=trail[trail.length-1];
   if(!last || Math.hypot(last.x-me.x,last.y-me.y)>6){ trail.push({x:me.x,y:me.y}); if(trail.length>200) trail.shift(); }
@@ -799,6 +800,7 @@ function updateGuide(dt){
     // 이미 충분히 가까우면 멈춤 / 입장 인사 중에는 제자리
     if(Math.hypot(me.x-guide.x,me.y-guide.y)<62) { tx=guide.x; ty=guide.y; }
     if(performance.now()<guide.greetUntil && Math.hypot(me.x-140,me.y-DOORY)<60){ tx=guide.x; ty=guide.y; }
+    else if(performance.now()<guide.greet2Until && Math.hypot(me.x-140,me.y-DOORY)<60){ tx=410; ty=DOORY+120; }
     // 너무 멀어지면(지도 이동 등) 관객 옆으로 순간 이동
     if(Math.hypot(me.x-guide.x,me.y-guide.y)>520 || roomAt(guide.x)!==roomAt(me.x) && Math.abs(guide.x-me.x)>420){ guide.x=me.x-50; guide.y=Math.min(H-R,me.y+20); trail.length=0; }
   }
@@ -808,6 +810,7 @@ function updateGuide(dt){
   guide.focus=focus;
   if(focus && d<12){ guide.say=hostLine(focus); guide.point = focus.x>guide.x?1:-1; }
   else if(performance.now()<guide.greetUntil){ guide.say=C.hostGreeting||""; guide.point=1; }
+  else if(performance.now()<guide.greet2Until){ guide.say=C.hostGreeting2||""; guide.point=1; }
   else if(performance.now()<guide.roomSayUntil){ guide.say=guide.roomSay; guide.point=1; }
   else guide.say="";
 }
