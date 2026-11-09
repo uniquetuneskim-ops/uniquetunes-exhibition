@@ -215,9 +215,9 @@ const CONFIG = {
   embedYouTube: true,
 
   host: "음비맨",   // 도슨트 캐릭터 이름
-  hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 이쪽으로 따라오실래요?",   // 로비에서 처음 하는 말
-  hostGreeting2: "오른쪽으로 쭉 걸어가시면 작품들과 설명을 차례로 보실 수 있어요.",   // 이어서 오른쪽으로 걸으며 하는 말
-  hostApproach: "유니크튠즈의 작품들을 보여드릴게요. 오른쪽으로 이동하면서 작품들을 보세요!",   // 인사 후 관객이 음비맨에게 다가오면 하는 말
+  hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 오른쪽으로 이동하면서 작품들을 보세요!",   // 로비에서 처음 하는 말
+  hostGreeting2: "",   // 이어서 오른쪽으로 걸으며 하는 말
+  hostApproach: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 오른쪽으로 이동하면서 작품들을 보세요!",   // 인사 후 관객이 음비맨에게 다가오면 하는 말
 
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념\n온라인 음악전시",   // \n 자리에서 줄바꿈
@@ -473,7 +473,7 @@ $("gateForm").addEventListener("submit", e=>{
   setTimeout(enter, 900);
 });
 function enter(){
-  guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+9000;
+  guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+(C.hostGreeting2?9000:0);
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
