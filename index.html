@@ -217,6 +217,7 @@ const CONFIG = {
   host: "음비맨",   // 도슨트 캐릭터 이름
   hostGreeting: "유니크튠즈는 이제 문을 닫지만 그동안의 작품들을 보여드릴 수 있어서 기뻐요. 이쪽으로 따라오실래요?",   // 로비에서 처음 하는 말
   hostGreeting2: "오른쪽으로 쭉 걸어가시면 작품들과 설명을 차례로 보실 수 있어요.",   // 이어서 오른쪽으로 걸으며 하는 말
+  hostApproach: "유니크튠즈의 작품들을 보여드릴게요. 오른쪽으로 이동하면서 작품들을 보세요!",   // 인사 후 관객이 음비맨에게 다가오면 하는 말
 
   label: "UNIQUETUNES",
   title: "유니크튠즈 폐업기념\n온라인 음악전시",   // \n 자리에서 줄바꿈
@@ -446,7 +447,7 @@ let color = (ticket && ticket.color) || COLORS[0];
 const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null };
 const keys = {};
 let path = [];             // waypoints for click-to-move
-const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
+const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, approachUntil:0, approachNext:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
 const trail = [];          // 관객이 지나간 길 (음비맨이 따라 걷는 경로)
 let pendingOpen = null;    // frame to open on arrival
 let near = null;
@@ -583,7 +584,7 @@ function drawWorld(t){
   list.push({ x:me.x, y:me.y, nick:ticket?ticket.nick:"", color, dir:me.dir, moving:me.moving, emote:me.emote, isMe:true });
   if(ticket) list.push({ x:guide.x, y:guide.y, nick:C.host||"음비맨", npc:true, talk:!!guide.say, moving:guide.moving, dir:guide.dir, point:guide.point });
   list.sort((a,b)=>a.y-b.y).forEach(a=> a.panel ? drawPanel(a.panel) : drawAvatar(a,t));
-  if(ticket && guide.say){ if((guide.focus && !guide.focus.panel) || (!guide.focus && (guide.say===C.hostGreeting || guide.say===C.hostGreeting2 || (guide.say===guide.roomSay && !rooms[roomAt(guide.x)].introEn)))) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
+  if(ticket && guide.say){ if((guide.focus && !guide.focus.panel) || (!guide.focus && (guide.say===C.hostGreeting || guide.say===C.hostGreeting2 || guide.say===C.hostApproach || (guide.say===guide.roomSay && !rooms[roomAt(guide.x)].introEn)))) drawSayAt(guide.x, guide.y+42, guide.say, true); else drawSayAt(guide.x, guide.y-64, guide.say); }
 }
 function drawFace(f){
     const fx=f.x-f.w/2, fy=f.y-f.h/2;
@@ -819,6 +820,12 @@ function updateGuide(dt){
   if(guide.moving){ const k=Math.min(1,sp/d); guide.x+=dx*k; guide.y+=dy*k; if(Math.abs(dx)>1) guide.dir=dx>0?1:-1; }
   guide.focus=focus;
   if(focus && d<12){ guide.say=hostLine(focus); guide.point = focus.x>guide.x?1:-1; }
+  // 인사 후 관객이 오른쪽으로 가지 않고 음비맨에게 다가오면 짧게 다시 안내
+  const now=performance.now();
+  if(roomAt(me.x)===0 && guide.greetUntil && now>=guide.greet2Until && now>=guide.approachNext && Math.hypot(me.x-guide.x,me.y-guide.y)<72){ guide.approachUntil=now+7000; guide.approachNext=now+15000; }
+  if(roomAt(me.x)!==0) guide.approachUntil=0;
+  if(focus && d<12){}
+  else if(now<guide.approachUntil){ guide.say=C.hostApproach||""; guide.point=1; }
   else if(performance.now()<guide.greetUntil){ guide.say=C.hostGreeting||""; guide.point=1; }
   else if(performance.now()<guide.greet2Until){ guide.say=C.hostGreeting2||""; guide.point=1; }
   else if(performance.now()<guide.roomSayUntil){ guide.say=guide.roomSay; guide.point=1; }
