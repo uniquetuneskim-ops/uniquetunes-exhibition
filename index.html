@@ -315,7 +315,8 @@ const CONFIG = {
       { id:"w06", year:"○○○○", title:"라이브", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
       { id:"w07", year:"○○○○", title:"12주년 2LP", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
       { id:"w08", year:"○○○○", title:"문을 닫으며", desc:"", say:"", note:"", youtube:"", video:"", image:"" },
-      { id:"letter", type:"letter", title:"마지막 인사" }
+      { id:"letter", type:"letter", title:"마지막 인사" },
+      { id:"guestbook", type:"guestbook", title:"방명록" }
     ]}
   ],
 
@@ -457,21 +458,21 @@ const DOORY = (DOOR[0]+DOOR[1])/2;
 const PANEL_Y = WALL+344;   // 3D: 바닥에 세운 전시 패널 위치
 const rooms = [];
 let wx = 0;
-rooms.push({ name:"로비", floor:"#1c1714", x:0, w:620, works:[{id:"guestbook", type:"guestbook", title:"방명록"}], lobby:true });
+rooms.push({ name:"로비", floor:"#1c1714", x:0, w:620, works:[], lobby:true });
 wx = 620;
-C.rooms.forEach(r=>{ const top=r.works.filter(w=>w.wall!=="bottom").length, bot=r.works.length-top; const w = Math.max(r.introEn ? 980 : 620, Math.max(top,bot,r.slots||0)*240+160); rooms.push({ ...r, x:wx, w, hasBottom: bot>0 }); wx += w; });
+function wallOrder(r){ // 3D: 회고록·이야기 패널도 영상처럼 벽에 건다
+  const list=r.works.map((w,i)=>({w,i}));
+  if(r.slots){ list.sort((a,b)=>{ const sa=a.w.slot||a.i+1, sb=b.w.slot||b.i+1; if(sa!==sb) return sa-sb; return (a.w.wall==="bottom")-(b.w.wall==="bottom"); }); return list.map(x=>x.w); }
+  return [...r.works.filter(w=>w.wall!=="bottom"), ...r.works.filter(w=>w.wall==="bottom")];
+}
+C.rooms.forEach(r=>{ const n=r.works.length; const w = Math.max(r.introEn ? 980 : 620, n*240+160); rooms.push({ ...r, x:wx, w, hasBottom:false }); wx += w; });
 const WORLD_W = wx, WORLD_H = H + 20;
 const frames = [];
 rooms.forEach((r,ri)=>{
-  const top=r.works.filter(w=>w.wall!=="bottom"), bot=r.works.filter(w=>w.wall==="bottom");
-  top.forEach((wk,i)=>{
-    const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(top.length+1);
-    frames.push({ ...wk, room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+96 });
-  });
-  // 아래쪽: 바닥에 세운 전시 패널
-  bot.forEach((wk,i)=>{
-    const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(bot.length+1);
-    frames.push({ ...wk, room:ri, x:fx, y:H-128, w:150, h:84, vx:fx, vy:H-40, panel:true });
+  const all = r.lobby ? [] : wallOrder(r);
+  all.forEach((wk,i)=>{
+    const fx = r.x + 80 + (i+0.5)*(r.w-160)/all.length;
+    frames.push({ ...wk, wall:"top", room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+96 });
   });
 });
 const bounds = rooms.slice(1).map(r=>r.x);
@@ -531,7 +532,7 @@ function enter(){
   guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+(C.hostGreeting2?9000:0);
   try{ const sp=JSON.parse(sessionStorage.getItem("ut12_pos")); if(sp && Date.now()-sp.t<30*60*1000 && sp.x>620){ me.x=sp.x; me.y=sp.y; guide.x=sp.x-50; guide.y=Math.min(H-R,sp.y+20); guide.greetUntil=0; guide.greet2Until=0; guide.room=roomAt(sp.x); guide.seen[guide.room]=1; restored=true; } }catch(e){}
   setInterval(()=>{ try{ sessionStorage.setItem("ut12_pos", JSON.stringify({x:Math.round(me.x),y:Math.round(me.y),t:Date.now()})); }catch(e){} }, 1000);
-  if(!restored){ me.heading=Math.PI*0.82; if(w3ready) W3D.snap({me}); }
+  if(!restored){ me.heading=Math.PI; if(w3ready) W3D.snap({me}); }
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
