@@ -499,10 +499,10 @@ frames.forEach(f=>{
 /* =================== STATE =================== */
 let ticket = store.get("ut12_ticket2");
 let color = (ticket && ticket.color) || COLORS[0];
-const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null, heading: Math.PI/2, back:false, turning:false };
+const me = { x: 310, y: DOORY, dir: 1, moving:false, bob:0, emote:null, heading: Math.PI/2, back:false, turning:false };
 const keys = {};
 let path = [];             // waypoints for click-to-move
-const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, approachUntil:0, approachNext:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
+const guide = { x: 420, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, approachUntil:0, approachNext:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
 const trail = [];          // 관객이 지나간 길 (음비맨이 따라 걷는 경로)
 let pendingOpen = null;    // frame to open on arrival
 let near = null;
