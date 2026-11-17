@@ -338,6 +338,7 @@ const CONFIG = {
 </script>
 
 <canvas id="world"></canvas>
+<script src="world3d.js"></script>
 <canvas id="minimap" class="hidden"></canvas>
 
 <div class="hud-top hidden" id="hudTop">
@@ -356,7 +357,7 @@ const CONFIG = {
   <div class="emotes" id="emotes">
     <button data-e="👏" aria-label="박수">👏</button><button data-e="💛" aria-label="하트">💛</button><button data-e="🎶" aria-label="음표">🎶</button><button data-e="🥲" aria-label="뭉클">🥲</button>
   </div>
-  <div class="help">방향키·WASD로 이동, 바닥을 눌러도 걸어가요<br>작품 앞에서 Space · 지도를 눌러 이동</div>
+  <div class="help">W·S 앞뒤로 걷기, A·D 방향 바꾸기, 바닥을 눌러도 걸어가요<br>화면을 끌어 둘러보기 · 작품 앞에서 Space · 지도를 눌러 이동</div>
 </div>
 <div class="prompt hidden" id="prompt"></div>
 
@@ -453,6 +454,7 @@ const H = 620;             // 전시실 바닥 끝
 const R = 14;              // 캐릭터 반지름
 const DOOR = [310, 440];   // 전시실 사이 문 (y 구간)
 const DOORY = (DOOR[0]+DOOR[1])/2;
+const PANEL_Y = WALL+344;   // 3D: 바닥에 세운 전시 패널 위치
 const rooms = [];
 let wx = 0;
 rooms.push({ name:"로비", floor:"#1c1714", x:0, w:620, works:[{id:"guestbook", type:"guestbook", title:"방명록"}], lobby:true });
@@ -464,12 +466,12 @@ rooms.forEach((r,ri)=>{
   const top=r.works.filter(w=>w.wall!=="bottom"), bot=r.works.filter(w=>w.wall==="bottom");
   top.forEach((wk,i)=>{
     const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(top.length+1);
-    frames.push({ ...wk, room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+46 });
+    frames.push({ ...wk, room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+96 });
   });
   // 아래쪽: 바닥에 세운 전시 패널
   bot.forEach((wk,i)=>{
     const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(bot.length+1);
-    frames.push({ ...wk, room:ri, x:fx, y:H-128, w:150, h:84, vx:fx, vy:H-30, panel:true });
+    frames.push({ ...wk, room:ri, x:fx, y:H-128, w:150, h:84, vx:fx, vy:H-40, panel:true });
   });
 });
 const bounds = rooms.slice(1).map(r=>r.x);
@@ -477,6 +479,7 @@ function roomAt(x){ for(let i=rooms.length-1;i>=0;i--) if(x>=rooms[i].x) return 
 function valid(x,y){
   if(x<R || x>WORLD_W-R || y<WALL+R || y>H-R) return false;
   for(const bx of bounds){ if(Math.abs(x-bx)<10+R && !(y>DOOR[0]+R && y<DOOR[1]-R)) return false; }
+  for(const f of frames){ if(f.panel && Math.abs(x-f.x)<72+R && Math.abs(y-PANEL_Y)<10+R) return false; }
   return true;
 }
 
@@ -495,7 +498,7 @@ frames.forEach(f=>{
 /* =================== STATE =================== */
 let ticket = store.get("ut12_ticket2");
 let color = (ticket && ticket.color) || COLORS[0];
-const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null };
+const me = { x: 140, y: DOORY, dir: 1, moving:false, bob:0, emote:null, heading: Math.PI/2, back:false, turning:false };
 const keys = {};
 let path = [];             // waypoints for click-to-move
 const guide = { x: 250, y: DOORY+120, dir:1, point:1, moving:false, say:"", focus:null, greetUntil:0, greet2Until:0, approachUntil:0, approachNext:0, room:0, roomSay:"", roomSayUntil:0, seen:{} };
@@ -523,10 +526,12 @@ $("gateForm").addEventListener("submit", e=>{
   $("gateBtn").disabled=true;
   setTimeout(enter, 900);
 });
+let restored=false;
 function enter(){
   guide.greetUntil = performance.now()+10000; guide.greet2Until = guide.greetUntil+(C.hostGreeting2?9000:0);
-  try{ const sp=JSON.parse(sessionStorage.getItem("ut12_pos")); if(sp && Date.now()-sp.t<30*60*1000 && sp.x>620){ me.x=sp.x; me.y=sp.y; guide.x=sp.x-50; guide.y=Math.min(H-R,sp.y+20); guide.greetUntil=0; guide.greet2Until=0; guide.room=roomAt(sp.x); guide.seen[guide.room]=1; } }catch(e){}
+  try{ const sp=JSON.parse(sessionStorage.getItem("ut12_pos")); if(sp && Date.now()-sp.t<30*60*1000 && sp.x>620){ me.x=sp.x; me.y=sp.y; guide.x=sp.x-50; guide.y=Math.min(H-R,sp.y+20); guide.greetUntil=0; guide.greet2Until=0; guide.room=roomAt(sp.x); guide.seen[guide.room]=1; restored=true; } }catch(e){}
   setInterval(()=>{ try{ sessionStorage.setItem("ut12_pos", JSON.stringify({x:Math.round(me.x),y:Math.round(me.y),t:Date.now()})); }catch(e){} }, 1000);
+  if(!restored){ me.heading=Math.PI*0.82; if(w3ready) W3D.snap({me}); }
   $("gate").classList.add("hidden");
   ["hudTop","hudBot","minimap"].forEach(id=>$(id).classList.remove("hidden"));
   setTimeout(()=>document.body.classList.add("open"),120);
@@ -534,13 +539,13 @@ function enter(){
 }
 
 /* =================== CANVAS =================== */
-const cv=$("world"), cx=cv.getContext("2d");
+const cv=$("world"), cx=document.createElement("canvas").getContext("2d");
 const mm=$("minimap"), mx=mm.getContext("2d");
 let VW=0, VH=0, DPR=1, scale=1, camX=0, camY=0;
 const MMW=200, MMH=Math.round(200*WORLD_H/WORLD_W)+0;
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2); VW=innerWidth; VH=innerHeight;
-  cv.width=VW*DPR; cv.height=VH*DPR; cv.style.width=VW+"px"; cv.style.height=VH+"px";
+  
   scale=Math.max(.55,Math.min(1.25,(VH-60)/(WORLD_H+80)));
   const mw = VW<600 ? 130 : MMW, mh = Math.max(28, Math.round(mw*WORLD_H/WORLD_W));
   mm.width=mw*DPR; mm.height=mh*DPR; mm.style.width=mw+"px"; mm.style.height=mh+"px"; mm._w=mw; mm._h=mh;
@@ -798,13 +803,11 @@ function planTo(tx,ty){
   }
   pts.push({x:tx,y:ty}); path=pts;
 }
-cv.addEventListener("pointerdown",e=>{
-  if(!ticket || !$("gate").classList.contains("hidden")) return;
-  const p=toWorld(e.clientX,e.clientY);
-  const hit=frames.find(f=>Math.abs(p.x-f.x)<f.w/2+12 && (f.panel ? (p.y>f.y-f.h/2-40 && p.y<f.y+f.h/2+34) : (p.y>f.y-f.h/2-12 && p.y<WALL+50)));
-  if(hit){ if(Math.hypot(me.x-hit.vx,me.y-hit.vy)<70){ openFrame(hit); return; } pendingOpen=hit; planTo(hit.vx,hit.vy); }
-  else { pendingOpen=null; planTo(p.x,p.y); }
-});
+function onTap(res){
+  if(!ticket || !$("gate").classList.contains("hidden") || !res) return;
+  if(res.frame){ const hit=res.frame; if(Math.hypot(me.x-hit.vx,me.y-hit.vy)<110){ openFrame(hit); return; } pendingOpen=hit; planTo(hit.vx,hit.vy); }
+  else { pendingOpen=null; planTo(res.x,res.y); }
+}
 mm.addEventListener("pointerdown",e=>{
   const r=mm.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*WORLD_W;
   pendingOpen=null; planTo(x, DOORY);
@@ -812,14 +815,17 @@ mm.addEventListener("pointerdown",e=>{
 
 let lastSent=0, lastSentPos="";
 function step(dt){
-  const sp=230*dt; let dx=0,dy=0;
-  if(keys.arrowleft||keys.a) dx-=1; if(keys.arrowright||keys.d) dx+=1;
-  if(keys.arrowup||keys.w) dy-=1; if(keys.arrowdown||keys.s) dy+=1;
-  if(!dx && !dy && path.length){
+  let sp=230*dt, dx=0, dy=0;
+  const kt=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0), kf=(keys.arrowup||keys.w?1:0)-(keys.arrowdown||keys.s?1:0);
+  const modalOpen=!$("modal").classList.contains("hidden");
+  me.back=false; me.turning=!!kt && !modalOpen;
+  if(kt && !modalOpen) me.heading -= kt*1.9*dt;
+  if(kf){ dx=Math.sin(me.heading)*kf; dy=Math.cos(me.heading)*kf; me.back=kf<0; if(me.back) sp*=.6; }
+  else if(!kt && path.length){
     const p=path[0], ddx=p.x-me.x, ddy=p.y-me.y, d=Math.hypot(ddx,ddy);
     if(d<6){ path.shift(); if(!path.length && pendingOpen){ const f=pendingOpen; pendingOpen=null; openFrame(f); } }
-    else { dx=ddx/d; dy=ddy/d; }
-  } else if(dx&&dy){ dx*=.7071; dy*=.7071; }
+    else { dx=ddx/d; dy=ddy/d; let df=Math.atan2(dx,dy)-me.heading; df=Math.atan2(Math.sin(df),Math.cos(df)); me.heading+=df*Math.min(1,dt*10); }
+  }
   me.moving = !!(dx||dy) && $("modal").classList.contains("hidden");
   if(me.moving){
     const nx=me.x+dx*sp, ny=me.y+dy*sp;
@@ -830,7 +836,7 @@ function step(dt){
   }
   updateGuide(dt);
   // nearest frame
-  let best=null, bd=75;
+  let best=null, bd=100;
   frames.forEach(f=>{ const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<bd){bd=d;best=f;} });
   if(best!==near){ near=best; const pr=$("prompt");
     if(near && !modalFrame){ pr.textContent = (near.type==="guestbook"?"방명록 열기":near.type==="letter"?"마지막 인사 읽기":near.type==="story"?"「"+near.title+"」 읽기":"「"+near.title+"」 감상하기") + (matchMedia("(pointer:coarse)").matches?" · 탭":" · Space"); pr.classList.remove("hidden"); pr.classList.toggle("up", !!near.panel); pr.onclick=()=>openFrame(near); }
@@ -851,11 +857,11 @@ function updateGuide(dt){
   const last=trail[trail.length-1];
   if(!last || Math.hypot(last.x-me.x,last.y-me.y)>6){ trail.push({x:me.x,y:me.y}); if(trail.length>200) trail.shift(); }
   // 가장 가까운 영상 액자 (도슨트가 설명할 대상)
-  let focus=null, fd=95;
+  let focus=null, fd=140;
   frames.forEach(f=>{ if(f.type && f.type!=="story") return; const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<fd){fd=d;focus=f;} });
   if(focus && roomAt(guide.x)!==focus.room) focus=null;   // 같은 방에 도착한 뒤에 설명
   let tx, ty;
-  if(focus){ tx= focus.panel ? focus.x+focus.w/2+46 : focus.x-74; ty= focus.panel ? H-64 : WALL+52; }
+  if(focus){ tx= focus.panel ? focus.x+100 : focus.x-112; ty= focus.panel ? H-60 : WALL+72; }
   else {
     // 관객 바로 뒤 발자취를 따라감
     let i=trail.length-1, acc=0;
@@ -885,11 +891,14 @@ function updateGuide(dt){
   else guide.say="";
 }
 
+let w3ready=false;
+function startW3(){ if(w3ready) return; W3D.init({ canvas:cv, rooms, frames, WALL, H, DOOR, WORLD_W, PANEL_Y, C, umbiSrc:UMBI.map(i=>i.src), logoSrc:"media/logo.png", commentCount, onTap }); w3ready=true; }
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(startW3); setTimeout(startW3, 2500); } else startW3();
 let lastT=performance.now();
 function loop(t){
   const dt=Math.min(.05,(t-lastT)/1000); lastT=t;
   if(ticket && $("gate").classList.contains("hidden")) step(dt);
-  drawWorld(t);
+  if(w3ready) W3D.frame(dt, { me, turning:me.turning, nick: ticket?ticket.nick:"", color, showMe:true, others, guide, showGuide:!!ticket, near, t, modalOpen:!!modalFrame, room:roomAt(me.x) });
   if(!mm.classList.contains("hidden")) drawMinimap();
   requestAnimationFrame(loop);
 }
