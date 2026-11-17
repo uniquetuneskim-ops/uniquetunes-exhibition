@@ -226,6 +226,7 @@ const CONFIG = {
   rooms: [
     { name: "1관 · 시작", floor: "#2a201b",
       intro: "LODIA(로디아)는 수란과 에피로 이루어진 EDM POP 듀오에요",
+      motto: "Most Unique Music In The World",
       works: [
       { id:"w01", year:"2014", title:"로디아 · I GOT A FEELING", desc:"LODIA (로디아) - I GOT A FEELING (TASTIX Remix)", say:"", note:"로디아는 수란과 에피의 2인조 EDM 프로젝트였어요. 수란이 작곡한 데모를 가지고 프랑스에 가서 Ray PD 와 음악작업을 해왔어요. 서울로 돌아와서 지하 골방에 처박혀서 제가 직접 녹음을 받았어요. \n2014년 7월 9일.\n유니크튠즈의 첫 음원이 발매한 날이에요\n멜론 일렉트로닉차트 30위까지 올랐어요.", youtube:"", video:"media/w01.mp4", image:"media/w01.jpg" },
       { id:"w01b", year:"2014", title:"로디아 · 티저", desc:"LODIA (로디아) - I Got A Feeling (Teaser)", say:"", note:"핫한 사진으로 이목을 끌고, 고퀄리티 EDM으로 강한 인상을 남기려 했어요", youtube:"", video:"media/w01b.mp4", image:"media/w01b.jpg" },
@@ -460,19 +461,19 @@ const rooms = [];
 let wx = 0;
 rooms.push({ name:"로비", floor:"#1c1714", x:0, w:620, works:[], lobby:true });
 wx = 620;
-function wallOrder(r){ // 3D: 회고록·이야기 패널도 영상처럼 벽에 건다
-  const list=r.works.map((w,i)=>({w,i}));
-  if(r.slots){ list.sort((a,b)=>{ const sa=a.w.slot||a.i+1, sb=b.w.slot||b.i+1; if(sa!==sb) return sa-sb; return (a.w.wall==="bottom")-(b.w.wall==="bottom"); }); return list.map(x=>x.w); }
-  return [...r.works.filter(w=>w.wall!=="bottom"), ...r.works.filter(w=>w.wall==="bottom")];
-}
-C.rooms.forEach(r=>{ const n=r.works.length; const w = Math.max(r.introEn ? 980 : 620, n*240+160); rooms.push({ ...r, x:wx, w, hasBottom:false }); wx += w; });
+C.rooms.forEach(r=>{ const top=r.works.filter(w=>w.wall!=="bottom").length, bot=r.works.length-top; const w = Math.max(r.introEn ? 980 : 620, Math.max(top,bot,r.slots||0)*240+160); rooms.push({ ...r, x:wx, w, hasBottom: bot>0 }); wx += w; });
 const WORLD_W = wx, WORLD_H = H + 20;
 const frames = [];
 rooms.forEach((r,ri)=>{
-  const all = r.lobby ? [] : wallOrder(r);
-  all.forEach((wk,i)=>{
-    const fx = r.x + 80 + (i+0.5)*(r.w-160)/all.length;
-    frames.push({ ...wk, wall:"top", room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+96 });
+  const top=r.works.filter(w=>w.wall!=="bottom"), bot=r.works.filter(w=>w.wall==="bottom");
+  top.forEach((wk,i)=>{
+    const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(top.length+1);
+    frames.push({ ...wk, room:ri, x:fx, y:62, w: (wk.type && wk.type!=="story") ? 132 : 168, h: (wk.type && wk.type!=="story") ? 82 : 96, vx:fx, vy:WALL+96 });
+  });
+  // 3D: 회고록·이야기는 맞은편(오른쪽) 벽에 건다
+  bot.forEach((wk,i)=>{
+    const fx = r.slots ? r.x + (wk.slot||i+1)*r.w/(r.slots+1) : r.x + (i+1)*r.w/(bot.length+1);
+    frames.push({ ...wk, room:ri, x:fx, y:H-128, w:150, h:84, vx:fx, vy:H-40, back:true });
   });
 });
 const bounds = rooms.slice(1).map(r=>r.x);
@@ -862,7 +863,7 @@ function updateGuide(dt){
   frames.forEach(f=>{ if(f.type && f.type!=="story") return; const d=Math.hypot(me.x-f.vx,me.y-f.vy); if(d<fd){fd=d;focus=f;} });
   if(focus && roomAt(guide.x)!==focus.room) focus=null;   // 같은 방에 도착한 뒤에 설명
   let tx, ty;
-  if(focus){ tx= focus.panel ? focus.x+100 : focus.x-112; ty= focus.panel ? H-60 : WALL+72; }
+  if(focus){ tx= (focus.panel||focus.back) ? focus.x+100 : focus.x-112; ty= (focus.panel||focus.back) ? H-60 : WALL+72; }
   else {
     // 관객 바로 뒤 발자취를 따라감
     let i=trail.length-1, acc=0;
