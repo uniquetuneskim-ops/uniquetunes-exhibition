@@ -234,7 +234,13 @@ let s='';for(let r=80;r<196;r+=4)s+=`<circle cx="200" cy="200" r="${r}"/>`;gr.in
 const root=document.documentElement,bEn=document.getElementById('bEn'),bJa=document.getElementById('bJa');
 const setLang=l=>{root.dataset.lang=l;root.lang=l;bEn.setAttribute('aria-pressed',l==='en');bJa.setAttribute('aria-pressed',l==='ja');try{localStorage.setItem('hk-lang',l)}catch(e){}};
 bEn.addEventListener('click',()=>setLang('en'));bJa.addEventListener('click',()=>setLang('ja'));
-try{const v=localStorage.getItem('hk-lang');if(v)setLang(v)}catch(e){}
+const q=new URLSearchParams(location.search).get('lang')||location.hash.slice(1);
+const pick=v=>v==='ja'||v==='jp'?'ja':v==='en'?'en':null;
+let init=pick(q);
+if(!init){try{init=pick(localStorage.getItem('hk-lang'))}catch(e){}}
+if(init)setLang(init);
+const syncUrl=l=>{try{const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u)}catch(e){}};
+bEn.addEventListener('click',()=>syncUrl('en'));bJa.addEventListener('click',()=>syncUrl('ja'));
 
 document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(b.dataset.v);b.textContent='Copied'}catch(e){b.textContent='Copy failed'}
